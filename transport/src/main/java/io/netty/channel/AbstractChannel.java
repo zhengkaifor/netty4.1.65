@@ -480,6 +480,8 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 register0(promise);
             } else {
                 try {
+                    //注意这里NioEventLoop重写了execute方法,将任务丢入到nioEventLoop队列中,并且开启run,不断轮询去除task执行
+                    //io.netty.util.concurrent.SingleThreadEventExecutor#execute(java.lang.Runnable)
                     eventLoop.execute(new Runnable() {
                         @Override
                         public void run() {
@@ -505,6 +507,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                     return;
                 }
                 boolean firstRegistration = neverRegistered;
+                //这里只是往selector上注册channel  0000 并未监听任何事件
                 doRegister();
                 neverRegistered = false;
                 registered = true;
@@ -525,6 +528,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                         // again so that we process inbound data.
                         //
                         // See https://github.com/netty/netty/issues/4805
+                        //这里注册监听事件
                         beginRead();
                     }
                 }

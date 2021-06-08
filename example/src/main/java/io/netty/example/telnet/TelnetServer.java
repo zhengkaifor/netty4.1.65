@@ -32,7 +32,7 @@ import io.netty.handler.ssl.util.SelfSignedCertificate;
 public final class TelnetServer {
 
     static final boolean SSL = System.getProperty("ssl") != null;
-    static final int PORT = Integer.parseInt(System.getProperty("port", SSL? "8992" : "8023"));
+    static final int PORT = Integer.parseInt(System.getProperty("port", SSL ? "8992" : "8023"));
 
     public static void main(String[] args) throws Exception {
         // Configure SSL.
@@ -49,9 +49,13 @@ public final class TelnetServer {
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
-             .channel(NioServerSocketChannel.class)
-             .handler(new LoggingHandler(LogLevel.INFO, ByteBufFormat.SIMPLE))
-             .childHandler(new TelnetServerInitializer(sslCtx));
+                    //会调用工厂类 执行传入类的构造器方法生成channel
+                    //生成channel过程中会生成默认的pipeLine以及 pipeLine中的heal与tail
+                    .channel(NioServerSocketChannel.class)
+                    //handler在初始化的时候就会执行
+                    .handler(new LoggingHandler(LogLevel.INFO, ByteBufFormat.SIMPLE))
+                    //childHandler会在初始化后channelRead中被添加到pipeLine中
+                    .childHandler(new TelnetServerInitializer(sslCtx));
 
             b.bind(PORT).sync().channel().closeFuture().sync();
         } finally {

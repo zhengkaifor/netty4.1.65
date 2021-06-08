@@ -490,6 +490,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 } else if (strategy > 0) {
                     final long ioStartTime = System.nanoTime();
                     try {
+                        //处理IO事件
                         processSelectedKeys();
                     } finally {
                         // Ensure we always run tasks.
