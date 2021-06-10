@@ -55,6 +55,7 @@ public final class TelnetClient {
              .handler(new TelnetClientInitializer(sslCtx));
 
             // Start the connection attempt.
+            //sync 会无限等待 知道建立连接
             Channel ch = b.connect(HOST, PORT).sync().channel();
 
             // Read commands from the stdin.
