@@ -44,6 +44,10 @@ public final class TelnetServer {
             sslCtx = null;
         }
 
+        //这里会生成Selector
+        //多个channel 可以注册到一个Selector上.  注册完毕会返回一个SelectionKey
+        //SelectionKey 代表channel跟Selector关联关系
+        //EventLoopGroup 包含多个eventLoop的集合 内部对象childs[];
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {

@@ -270,6 +270,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
 
     private ChannelFuture doBind(final SocketAddress localAddress) {
         //往selector中注册channel
+        //包括初始化channel 并且在pipeline中增加ServerBootstrapAcceptor handler
+        //ServerBootstrapAcceptor 负责将建立完连接的channel交给workGroup
         final ChannelFuture regFuture = initAndRegister();
         final Channel channel = regFuture.channel();
         if (regFuture.cause() != null) {
@@ -279,7 +281,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         if (regFuture.isDone()) {
             // At this point we know that the registration was complete and successful.
             ChannelPromise promise = channel.newPromise();
-            //绑定端口
+            //绑定端口,并且开启监听 listen
             doBind0(regFuture, channel, localAddress, promise);
             return promise;
         } else {
@@ -310,6 +312,9 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         Channel channel = null;
         try {
             channel = channelFactory.newChannel();
+            //添加channel的配置属性
+            //如果是ServerBootstrap 会默认添加一个用来将建立好连接的channel交给workGroup的channel
+            //如果是普通的Bootstrap,就添加我们配置childGroup,childHandler
             init(channel);
         } catch (Throwable t) {
             if (channel != null) {
@@ -323,6 +328,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         }
 
         //从多个NioEventLoop中choose一个执行注册channel任务,并且会开启轮训selector事件
+        //注册channel跟selector的关联关系 并且生成selectKey
         ChannelFuture regFuture = config().group().register(channel);
         if (regFuture.cause() != null) {
             if (channel.isRegistered()) {

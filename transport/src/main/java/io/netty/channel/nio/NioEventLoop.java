@@ -138,6 +138,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 rejectedExecutionHandler);
         this.provider = ObjectUtil.checkNotNull(selectorProvider, "selectorProvider");
         this.selectStrategy = ObjectUtil.checkNotNull(strategy, "selectStrategy");
+        //这里netty将selector包装了一层,调用java Selector.selector之后 会将selectKey添加到自身的selectedKeys中.
         final SelectorTuple selectorTuple = openSelector();
         this.selector = selectorTuple.selector;
         this.unwrappedSelector = selectorTuple.unwrappedSelector;
@@ -437,6 +438,8 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             try {
                 int strategy;
                 try {
+                    //根据是否有任务, 执行获取io事件
+                    //如果没任务,会调用一次不阻塞的select
                     strategy = selectStrategy.calculateStrategy(selectNowSupplier, hasTasks());
                     switch (strategy) {
                         case SelectStrategy.CONTINUE:
@@ -452,7 +455,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                             }
                             nextWakeupNanos.set(curDeadlineNanos);
                             try {
-                                //如果队列里没有其他任务了, 开始获取io事件
+                                //如果队列里没有其他任务了, 阻塞获取io事件
                                 if (!hasTasks()) {
                                     strategy = select(curDeadlineNanos);
                                 }
@@ -718,6 +721,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             // Also check for readOps of 0 to workaround possible JDK bug which may otherwise lead
             // to a spin loop
             if ((readyOps & (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != 0 || readyOps == 0) {
+                //如果是OP_ACCEPT 操作,会生成NioSocketChannel交给workGroup,其中获取消息采用的是AbstractNioByteChannel  byteUnsafe
                 unsafe.read();
             }
         } catch (CancelledKeyException ignored) {
