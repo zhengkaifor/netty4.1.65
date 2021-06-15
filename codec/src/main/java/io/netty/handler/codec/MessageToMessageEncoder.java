@@ -86,6 +86,7 @@ public abstract class MessageToMessageEncoder<I> extends ChannelOutboundHandlerA
                 @SuppressWarnings("unchecked")
                 I cast = (I) msg;
                 try {
+                    //这里会直接申请buffer 也就是内存
                     encode(ctx, cast, out);
                 } finally {
                     ReferenceCountUtil.release(cast);

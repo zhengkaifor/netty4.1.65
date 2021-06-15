@@ -28,13 +28,63 @@
 
 ​	  写事件从tail开始往head执行
 
+##### 注意点
+
+​		其中outHandler必须在最后一个inHandler之前，否则会出现outHandler无法执行的问题
+
+#### ChannelOutboundBuffer
+
+​    负责管理写出数据流，netty中将消息以entry的形式保存，通过一个链表顺序写出。
+
+​	其中
+
 # 流程
 
 ### 启动server
 
 ##### dobind
 
+```java
+private ChannelFuture doBind(final SocketAddress localAddress) {
+    //往selector中注册channel
+    //包括初始化channel 并且在pipeline中增加ServerBootstrapAcceptor handler
+    //ServerBootstrapAcceptor 负责将建立完连接的channel交给workGroup
+    final ChannelFuture regFuture = initAndRegister();
+    final Channel channel = regFuture.channel();
+    if (regFuture.cause() != null) {
+        return regFuture;
+    }
 
+    if (regFuture.isDone()) {
+        // At this point we know that the registration was complete and successful.
+        ChannelPromise promise = channel.newPromise();
+        //绑定端口,并且开启监听 listen
+        doBind0(regFuture, channel, localAddress, promise);
+        return promise;
+    } else {
+        // Registration future is almost always fulfilled already, but just in case it's not.
+        final PendingRegistrationPromise promise = new PendingRegistrationPromise(channel);
+        regFuture.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                Throwable cause = future.cause();
+                if (cause != null) {
+                    // Registration on the EventLoop failed so fail the ChannelPromise directly to not cause an
+                    // IllegalStateException once we try to access the EventLoop of the Channel.
+                    promise.setFailure(cause);
+                } else {
+                    // Registration was successful, so set the correct executor to use.
+                    // See https://github.com/netty/netty/issues/2586
+                    promise.registered();
+
+                    doBind0(regFuture, channel, localAddress, promise);
+                }
+            }
+        });
+        return promise;
+    }
+}
+```
 
 
 

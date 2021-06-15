@@ -173,6 +173,7 @@ public final class ChannelOutboundBuffer {
         }
 
         long newWriteBufferSize = TOTAL_PENDING_SIZE_UPDATER.addAndGet(this, size);
+        //如果总待处理大小超过了高水位, 设置为不可写
         if (newWriteBufferSize > channel.config().getWriteBufferHighWaterMark()) {
             setUnwritable(invokeLater);
         }
@@ -406,6 +407,7 @@ public final class ChannelOutboundBuffer {
         int nioBufferCount = 0;
         final InternalThreadLocalMap threadLocalMap = InternalThreadLocalMap.get();
         ByteBuffer[] nioBuffers = NIO_BUFFERS.get(threadLocalMap);
+        //带刷新条目
         Entry entry = flushedEntry;
         while (isFlushedEntry(entry) && entry.msg instanceof ByteBuf) {
             if (!entry.cancelled) {
@@ -436,6 +438,7 @@ public final class ChannelOutboundBuffer {
                     }
                     int neededSpace = min(maxCount, nioBufferCount + count);
                     if (neededSpace > nioBuffers.length) {
+                        //扩容
                         nioBuffers = expandNioBufferArray(nioBuffers, neededSpace, nioBufferCount);
                         NIO_BUFFERS.set(threadLocalMap, nioBuffers);
                     }

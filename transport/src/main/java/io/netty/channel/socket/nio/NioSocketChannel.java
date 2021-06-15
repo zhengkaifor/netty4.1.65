@@ -437,6 +437,7 @@ public class NioSocketChannel extends AbstractNioByteChannel implements io.netty
             }
         } while (writeSpinCount > 0);
 
+        //如果消息太大了,超过了writeSpinCount  设置写,eventLoop再次处理. 否则提交一个任务给eventLoop再跑一次
         incompleteWrite(writeSpinCount < 0);
     }
 

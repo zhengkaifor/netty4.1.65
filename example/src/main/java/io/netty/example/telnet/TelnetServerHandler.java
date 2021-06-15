@@ -54,6 +54,8 @@ public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
 
         // We do not need to write a ChannelBuffer here.
         // We know the encoder inserted at TelnetPipelineFactory will do the conversion.
+
+        //这里会从当前handlerContext开始 往前找outHandlerContext  ctx.channel().write() 则会从尾节点开始找 这里要注意
         ChannelFuture future = ctx.write(response);
 
         // Close the connection after sending 'Have a good day!'
