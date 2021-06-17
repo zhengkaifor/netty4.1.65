@@ -928,6 +928,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
         @SuppressWarnings("deprecation")
         protected void flush0() {
+            //标识位,标识当前是否为write状态
             if (inFlush0) {
                 // Avoid re-entrance
                 return;
@@ -959,6 +960,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             }
 
             try {
+                //真正的写数据
                 doWrite(outboundBuffer);
             } catch (Throwable t) {
                 handleWriteError(t);

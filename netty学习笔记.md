@@ -30,13 +30,114 @@
 
 ##### 注意点
 
-​		其中outHandler必须在最后一个inHandler之前，否则会出现outHandler无法执行的问题
+​		其中outHandler必须在最后一个inHandler之前，否则ChannelHandlerContext.write()会出现outHandler无法执行的问题，因为是从当前ChannelHandlerContext往前找
+
+ 		ChannelHandlerContext.channel().write()则不会，因为是从tail往前找。
 
 #### ChannelOutboundBuffer
 
 ​    负责管理写出数据流，netty中将消息以entry的形式保存，通过一个链表顺序写出。
 
-​	其中
+​    消息经过各个outChannelHandle处理完毕后会进入ChannelOutboundBuffer逻辑
+
+​	addMessage->addFlush->flush
+
+#####    addMessage
+
+​			
+
+```java
+/**
+ * Add given message to this {@link ChannelOutboundBuffer}. The given {@link ChannelPromise} will be notified once
+ * the message was written.
+ */
+public void addMessage(Object msg, int size, ChannelPromise promise) {
+    Entry entry = Entry.newInstance(msg, size, total(msg), promise);
+    //添加消息到队尾
+    if (tailEntry == null) {
+        flushedEntry = null;
+    } else {
+        Entry tail = tailEntry;
+        tail.next = entry;
+    }
+    tailEntry = entry;
+    //如果未flushEntry为null 则当前消息标识为unflushedEntry
+    if (unflushedEntry == null) {
+        unflushedEntry = entry;
+    }
+
+    // increment pending bytes after adding message to the unflushed arrays.
+    // See https://github.com/netty/netty/issues/1619
+    ////如果总待处理大小超过了高水位, 设置为不可写
+    incrementPendingOutboundBytes(entry.pendingSize, false);
+}
+```
+
+##### 	addFlush
+
+​	
+
+```java
+/**
+ * Add a flush to this {@link ChannelOutboundBuffer}. This means all previous added messages are marked as flushed
+ * and so you will be able to handle them.
+ */
+public void addFlush() {
+    // There is no need to process all entries if there was already a flush before and no new messages
+    // where added in the meantime.
+    //
+    // See https://github.com/netty/netty/issues/2577
+    //首先找到第一个标识未flush的entry
+    Entry entry = unflushedEntry;
+    if (entry != null) {
+        //设置需要written的第一个flushedEntry
+        if (flushedEntry == null) {
+            // there is no flushedEntry yet, so start with the entry
+            flushedEntry = entry;
+        }
+        do {
+            //flush之后不允许取消,flushed为 flush了但是未written的个数
+            flushed++;
+            if (!entry.promise.setUncancellable()) {
+                // Was cancelled so make sure we free up memory and notify about the freed bytes
+                int pending = entry.cancel();
+                decrementPendingOutboundBytes(pending, false, true);
+            }
+            entry = entry.next;
+        } while (entry != null);
+
+        // All flushed so reset unflushedEntry
+        unflushedEntry = null;
+    }
+}
+```
+
+
+
+##### flush =write
+
+```java
+protected void doWrite(ChannelOutboundBuffer in) throws Exception {
+    //writeSpinCount 单次write最多循环几次 16
+    int writeSpinCount = config().getWriteSpinCount();
+    do {
+        //获取队首entry.msg, 即flushedEntry.msg
+        Object msg = in.current();
+        if (msg == null) {
+            // Wrote all messages.
+            clearOpWrite();
+            // Directly return here so incompleteWrite(...) is not called.
+            return;
+        }
+        //channel写出
+        writeSpinCount -= doWriteInternal(in, msg);
+    } while (writeSpinCount > 0);
+
+    incompleteWrite(writeSpinCount < 0);
+}
+```
+
+
 
 # 流程
 
