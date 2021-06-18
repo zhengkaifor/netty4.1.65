@@ -279,6 +279,7 @@ public final class ChannelOutboundBuffer {
             ReferenceCountUtil.safeRelease(msg);
             //这里notify listener
             safeSuccess(promise);
+            //将该ChannelOutboundBuffer的待发送size减小, 用于水位判定
             decrementPendingOutboundBytes(size, false, true);
         }
 
@@ -358,6 +359,7 @@ public final class ChannelOutboundBuffer {
                     progress(readableBytes);
                     writtenBytes -= readableBytes;
                 }
+                //写出大于等于可读, 说明这个entry的msg已经写完了,清理entry,并且通知lister 操作已经执行完毕
                 remove();
             } else { // readableBytes > writtenBytes
                 if (writtenBytes != 0) {
