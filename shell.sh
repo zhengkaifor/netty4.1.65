@@ -1,4 +1,3 @@
 git add ./
-read commitString
-git commit -m commitString
+git commit -m $1
 git push origin master
