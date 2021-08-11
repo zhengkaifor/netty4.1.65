@@ -19,4 +19,5 @@ public class MyOutHandler extends MessageToMessageEncoder<String> {
         System.out.println(msg);
         out.add(msg);
     }
+
 }

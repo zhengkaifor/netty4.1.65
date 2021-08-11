@@ -28,6 +28,9 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.channels.SocketChannel;
 
 /**
  * Simplistic telnet client.
@@ -36,24 +39,23 @@ public final class TelnetClient {
 
     static final boolean SSL = System.getProperty("ssl") != null;
     static final String HOST = System.getProperty("host", "127.0.0.1");
-    static final int PORT = Integer.parseInt(System.getProperty("port", SSL? "8992" : "8023"));
+    static final int PORT = Integer.parseInt(System.getProperty("port", SSL ? "8992" : "8023"));
 
     public static void main(String[] args) throws Exception {
         // Configure SSL.
         final SslContext sslCtx;
         if (SSL) {
             sslCtx = SslContextBuilder.forClient()
-                .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
+                    .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
         } else {
             sslCtx = null;
         }
-
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             Bootstrap b = new Bootstrap();
             b.group(group)
-             .channel(NioSocketChannel.class)
-             .handler(new TelnetClientInitializer(sslCtx));
+                    .channel(NioSocketChannel.class)
+                    .handler(new TelnetClientInitializer(sslCtx));
 
             // Start the connection attempt.
             //sync 会无限等待 知道建立连接
@@ -62,16 +64,14 @@ public final class TelnetClient {
             // Read commands from the stdin.
             ChannelFuture lastWriteFuture = null;
             BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-            for (;;) {
+            for (; ; ) {
                 String line = in.readLine();
                 if (line == null) {
                     break;
                 }
 
                 // Sends the received line to the server.
-                lastWriteFuture = ch.writeAndFlush(line + "\r\n").addListener(ChannelFutureListener.CLOSE);
-
-
+                lastWriteFuture = ch.writeAndFlush(line + "\r\n");
                 // If user typed the 'bye' command, wait until the server closes
                 // the connection.
                 if ("bye".equals(line.toLowerCase())) {
