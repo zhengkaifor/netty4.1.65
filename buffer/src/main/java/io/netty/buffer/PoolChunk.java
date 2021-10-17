@@ -153,6 +153,8 @@ final class PoolChunk<T> implements PoolChunkMetric {
     /**
      * manage all avail runs
      */
+    //管理所有有用的run,这个数组的索引是SizeClasses中page2PageIdx计算出来的idx
+    //即sizeClass中每个size一个优先队列进行存储
     private final LongPriorityQueue[] runsAvail;
 
     /**

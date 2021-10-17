@@ -337,7 +337,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
         if (pageSize < MIN_PAGE_SIZE) {
             throw new IllegalArgumentException("pageSize: " + pageSize + " (expected: " + MIN_PAGE_SIZE + ')');
         }
-
+        //pageSize必须为2的倍数
         if ((pageSize & pageSize - 1) != 0) {
             throw new IllegalArgumentException("pageSize: " + pageSize + " (expected: power of 2)");
         }
@@ -348,6 +348,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
         }
 
         // Logarithm base 2. At this point we know that pageSize is a power of two.
+        // 高位0的个数
         return Integer.SIZE - 1 - Integer.numberOfLeadingZeros(pageSize);
     }
 
